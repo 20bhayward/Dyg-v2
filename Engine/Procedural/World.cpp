@@ -111,13 +111,26 @@ void World::SetParticle(int worldX, int worldY, const Particle& particle) {
     glm::ivec2 chunkCoord = WorldToChunkCoord(worldX, worldY);
     glm::ivec2 localCoord = WorldToLocalCoord(worldX, worldY);
     
+    // Debug - print coordinates
+    std::cout << "Setting particle at world:(" << worldX << "," << worldY << "), "
+              << "chunk:(" << chunkCoord.x << "," << chunkCoord.y << "), "
+              << "local:(" << localCoord.x << "," << localCoord.y << "), "
+              << "materialID:" << (int)particle.materialID << std::endl;
+    
     Chunk* chunk = GetChunk(chunkCoord);
     if (!chunk) {
         // Create the chunk if it doesn't exist
+        std::cout << "  Creating new chunk at (" << chunkCoord.x << "," << chunkCoord.y << ")" << std::endl;
         chunk = CreateChunk(chunkCoord);
     }
     
-    chunk->SetParticle(localCoord.x, localCoord.y, particle);
+    // Set the particle in the chunk
+    if (chunk && chunk->IsInBounds(localCoord.x, localCoord.y)) {
+        chunk->SetParticle(localCoord.x, localCoord.y, particle);
+        std::cout << "  Particle set successfully" << std::endl;
+    } else {
+        std::cerr << "  ERROR: Failed to set particle - chunk bounds check failed" << std::endl;
+    }
 }
 
 void World::SetPlayerPosition(const glm::vec2& position) {
@@ -258,6 +271,30 @@ glm::ivec2 World::WorldToLocalCoord(int worldX, int worldY) const {
 }
 
 void World::UpdateChunksMultiThreaded(float dt) {
+    // TEMPORARY - Use single-threaded updates to isolate issues
+    std::lock_guard<std::mutex> lock(m_ChunkMutex);
+    
+    // Debug output - how many chunks need updating?
+    int dirtyChunks = 0;
+    for (auto& [coord, chunk] : m_Chunks) {
+        if (chunk->IsDirty()) {
+            dirtyChunks++;
+        }
+    }
+    
+    if (dirtyChunks > 0) {
+        std::cout << "Updating " << dirtyChunks << " dirty chunks" << std::endl;
+    }
+    
+    // Update all chunks sequentially for now to avoid threading issues
+    for (auto& [coord, chunk] : m_Chunks) {
+        if (chunk->IsDirty()) {
+            // Just directly update the chunk
+            chunk->Update(dt);
+        }
+    }
+    
+    /* DISABLED MULTITHREADED UPDATES FOR DEBUGGING
     // Use a checkerboard pattern for updating to avoid race conditions
     // This divides the chunks into 4 groups that can be updated in parallel
     
@@ -293,6 +330,7 @@ void World::UpdateChunksMultiThreaded(float dt) {
             future.wait();
         }
     }
+    */
 }
 
 } // namespace Engine

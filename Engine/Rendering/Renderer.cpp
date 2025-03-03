@@ -57,10 +57,20 @@ bool Renderer::initialize(SDL_Window* window) {
 void Renderer::cleanup() {
     std::cout << "Cleaning up renderer..." << std::endl;
     
-    if (m_vulkanRenderer) {
-        m_vulkanRenderer->cleanup();
-        m_vulkanRenderer.reset();
+    try {
+        if (m_vulkanRenderer) {
+            std::cout << "Cleaning up Vulkan renderer..." << std::endl;
+            m_vulkanRenderer->cleanup();
+            m_vulkanRenderer.reset();
+            std::cout << "Vulkan renderer cleanup complete" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error during renderer cleanup: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Unknown error during renderer cleanup" << std::endl;
     }
+    
+    std::cout << "Renderer cleanup finished" << std::endl;
 }
 
 void Renderer::beginFrame() {

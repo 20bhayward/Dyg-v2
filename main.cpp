@@ -33,21 +33,27 @@ const int TARGET_FPS = 60;
 const double FRAME_TIME = 1000.0 / TARGET_FPS; // ms per frame
 
 // Camera parameters
-int cameraX = 0;
-int cameraY = 0;
-float zoomLevel = 1.0f;
+int cameraX = 640; // Center of screen
+int cameraY = 360; // Center of screen
+float zoomLevel = 0.5f; // Zoomed out to see more
 const float ZOOM_STEP = 0.1f;
 const float MIN_ZOOM = 0.5f;
 const float MAX_ZOOM = 4.0f;
 
 // Mouse parameters
 bool leftMousePressed = false;
+bool rightMousePressed = false;
 bool middleMousePressed = false;
 int mouseX = 0, mouseY = 0;
 int prevMouseX = 0, prevMouseY = 0;
 
 // Selected material for placing
 uint8_t selectedMaterial = 1; // Sand by default
+
+// Brush settings
+int brushSize = 3; // Diameter of brush in particles (3x3)
+const int MIN_BRUSH_SIZE = 1;
+const int MAX_BRUSH_SIZE = 20;
 
 int main(int argc, char** argv) {
     std::cout << "Starting Dyg-Endless Sand Simulation Engine" << std::endl;
@@ -134,6 +140,10 @@ int main(int argc, char** argv) {
         ).count();
         if (debugElapsed >= 5) {
             std::cout << "Running... Press ESC to exit" << std::endl;
+            std::cout << "Controls: Left-click to place, Right-click to erase" << std::endl;
+            std::cout << "         Shift+Plus/Minus to adjust brush size (current: " << brushSize << ")" << std::endl;
+            std::cout << "         Keys 1-0 to select materials (current: " 
+                      << Engine::MaterialDatabase::Get().GetMaterial(selectedMaterial).name << ")" << std::endl;
             lastDebugTime = currentTime;
         }
         
@@ -179,12 +189,29 @@ int main(int argc, char** argv) {
                         
                     // Zoom controls
                     case SDLK_EQUALS:
-                        zoomLevel += ZOOM_STEP;
-                        if (zoomLevel > MAX_ZOOM) zoomLevel = MAX_ZOOM;
+                    case SDLK_PLUS:
+                        if (SDL_GetModState() & KMOD_SHIFT) {
+                            // Increase brush size with Shift+Plus
+                            brushSize += 1;
+                            if (brushSize > MAX_BRUSH_SIZE) brushSize = MAX_BRUSH_SIZE;
+                            std::cout << "Brush size: " << brushSize << std::endl;
+                        } else {
+                            // Zoom in with Plus
+                            zoomLevel += ZOOM_STEP;
+                            if (zoomLevel > MAX_ZOOM) zoomLevel = MAX_ZOOM;
+                        }
                         break;
                     case SDLK_MINUS:
-                        zoomLevel -= ZOOM_STEP;
-                        if (zoomLevel < MIN_ZOOM) zoomLevel = MIN_ZOOM;
+                        if (SDL_GetModState() & KMOD_SHIFT) {
+                            // Decrease brush size with Shift+Minus
+                            brushSize -= 1;
+                            if (brushSize < MIN_BRUSH_SIZE) brushSize = MIN_BRUSH_SIZE;
+                            std::cout << "Brush size: " << brushSize << std::endl;
+                        } else {
+                            // Zoom out with Minus
+                            zoomLevel -= ZOOM_STEP;
+                            if (zoomLevel < MIN_ZOOM) zoomLevel = MIN_ZOOM;
+                        }
                         break;
                         
                     // Material selection
@@ -234,6 +261,8 @@ int main(int argc, char** argv) {
             } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (e.button.button == SDL_BUTTON_LEFT) {
                     leftMousePressed = true;
+                } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                    rightMousePressed = true;
                 } else if (e.button.button == SDL_BUTTON_MIDDLE) {
                     middleMousePressed = true;
                     prevMouseX = e.button.x;
@@ -242,6 +271,8 @@ int main(int argc, char** argv) {
             } else if (e.type == SDL_MOUSEBUTTONUP) {
                 if (e.button.button == SDL_BUTTON_LEFT) {
                     leftMousePressed = false;
+                } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                    rightMousePressed = false;
                 } else if (e.button.button == SDL_BUTTON_MIDDLE) {
                     middleMousePressed = false;
                 }
@@ -273,16 +304,65 @@ int main(int argc, char** argv) {
             }
         }
         
-        // Handle material placement with left mouse button
-        if (leftMousePressed) {
-            // Convert screen coordinates to world coordinates
-            int worldX = cameraX + static_cast<int>(mouseX / zoomLevel);
-            int worldY = cameraY + static_cast<int>(mouseY / zoomLevel);
+        // Handle particle placement and deletion
+        if (leftMousePressed || rightMousePressed) {
+            // Print debug info - this will help confirm if the mouse input is being registered
+            std::cout << "Mouse action: left=" << (leftMousePressed ? "true" : "false") 
+                      << ", right=" << (rightMousePressed ? "true" : "false") 
+                      << ", pos=(" << mouseX << "," << mouseY << ")" << std::endl;
             
-            // Place material with a small brush size (3x3)
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    world.SetParticle(worldX + dx, worldY + dy, Engine::Particle(selectedMaterial));
+            // Convert screen coordinates to world coordinates
+            // The camera coordinates should be at the center of the screen
+            int screenCenterX = WINDOW_WIDTH / 2;
+            int screenCenterY = WINDOW_HEIGHT / 2;
+            int offsetX = mouseX - screenCenterX;
+            int offsetY = mouseY - screenCenterY;
+            
+            // Calculate world coordinates based on camera position and zoom
+            int worldX = cameraX + static_cast<int>(offsetX / zoomLevel);
+            int worldY = cameraY + static_cast<int>(offsetY / zoomLevel);
+            
+            std::cout << "World coords: (" << worldX << "," << worldY << ")" << std::endl;
+            
+            // Always place exactly one particle at cursor for debugging
+            if (leftMousePressed) {
+                // Directly place a single particle regardless of what's there
+                std::cout << "Placing particle with material ID " << (int)selectedMaterial << std::endl;
+                world.SetParticle(worldX, worldY, Engine::Particle(selectedMaterial));
+                
+                // Check if it was placed successfully
+                const Engine::Particle& placed = world.GetParticle(worldX, worldY);
+                std::cout << "After placement: materialID=" << (int)placed.materialID << std::endl;
+            }
+            
+            // Old brush code with radius
+            if (false) { // Disabled temporarily for debugging
+                // Determine brush radius (half of diameter)
+                int radius = brushSize / 2;
+                
+                // Place or erase material based on which button is pressed
+                for (int dy = -radius; dy <= radius; dy++) {
+                    for (int dx = -radius; dx <= radius; dx++) {
+                        // Calculate distance from center of brush
+                        float distance = sqrt(dx*dx + dy*dy);
+                        
+                        // Only affect pixels within the brush radius
+                        if (distance <= radius) {
+                            int targetX = worldX + dx;
+                            int targetY = worldY + dy;
+                            
+                            if (leftMousePressed) {
+                                // Place material only if the target position is empty
+                                const Engine::Particle& existingParticle = world.GetParticle(targetX, targetY);
+                                if (existingParticle.IsEmpty()) {
+                                    world.SetParticle(targetX, targetY, Engine::Particle(selectedMaterial));
+                                }
+                            } else if (rightMousePressed) {
+                                // Erase material (set to empty/air, material ID 0)
+                                world.SetParticle(targetX, targetY, Engine::Particle(0));
+                            }
+                        }
+                    }
                 }
             }
         }

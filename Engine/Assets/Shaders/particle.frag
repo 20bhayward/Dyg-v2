@@ -67,21 +67,32 @@ void main() {
     // Sample the texture
     vec4 texColor = texture(worldTexture, fragTexCoord);
     
-    // Base case - just use the texture color
+    // Debug - temporarily show all materials 
+    // without filtering by material type
+    if (texColor.a < 0.01) {
+        discard;
+    }
+    
+    // Extract material ID from red channel
+    uint textureMaterialID = uint(texColor.r * 255.0);
+    
+    // Use this to debug in fragment shader
+    if (textureMaterialID == 0) {
+        discard; // Skip empty/air cells
+    }
+    
+    // Get the material type from the push constant for material-specific effects
+    uint materialID = material.materialType;
+    
+    // Base case - use the material color from texture
     vec3 finalColor = texColor.rgb;
     float alpha = texColor.a;
-    
-    // Skip processing for empty/air cells
-    if (alpha < 0.01)
-        discard;
     
     // Add noise-based detail to give texture to materials
     vec2 noiseCoord = fragTexCoord * vec2(100.0, 100.0) + ubo.worldOffset;
     float noiseValue = noise(noiseCoord);
     
     // Apply material-specific effects
-    uint materialID = material.materialType;
-    
     if (materialID == 1) { // Sand
         // Add grainy texture to sand
         finalColor *= 0.9 + 0.2 * noiseValue;

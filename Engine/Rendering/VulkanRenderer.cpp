@@ -205,22 +205,33 @@ bool VulkanRenderer::initialize(SDL_Window* window) {
 }
 
 void VulkanRenderer::cleanup() {
+    std::cout << "Starting VulkanRenderer cleanup..." << std::endl;
+    
     // Wait for device to finish operations
     if (m_device != VK_NULL_HANDLE) {
-        vkDeviceWaitIdle(m_device);
+        try {
+            std::cout << "Waiting for device idle..." << std::endl;
+            vkDeviceWaitIdle(m_device);
+        } catch (const std::exception& e) {
+            std::cerr << "Error waiting for device: " << e.what() << std::endl;
+        }
     }
     
     // Clean up sync objects
+    std::cout << "Cleaning up sync objects..." << std::endl;
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         if (m_device != VK_NULL_HANDLE) {
-            if (m_renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
+            if (i < m_renderFinishedSemaphores.size() && m_renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
                 vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+                m_renderFinishedSemaphores[i] = VK_NULL_HANDLE;
             }
-            if (m_imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
+            if (i < m_imageAvailableSemaphores.size() && m_imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
                 vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+                m_imageAvailableSemaphores[i] = VK_NULL_HANDLE;
             }
-            if (m_inFlightFences[i] != VK_NULL_HANDLE) {
+            if (i < m_inFlightFences.size() && m_inFlightFences[i] != VK_NULL_HANDLE) {
                 vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+                m_inFlightFences[i] = VK_NULL_HANDLE;
             }
         }
     }
@@ -461,8 +472,8 @@ void VulkanRenderer::renderWorld(const World& world, int cameraX, int cameraY, f
         uint32_t materialType;
     } constants;
     
-    // Render each type of material
-    for (uint32_t materialId = 1; materialId < static_cast<uint32_t>(MaterialDatabase::Get().GetMaterial(1).id); materialId++) {
+    // Render each type of material - iterate through all materials in the database
+    for (uint32_t materialId = 1; materialId <= 10; materialId++) {
         // Update push constants
         constants.materialType = materialId;
         vkCmdPushConstants(
@@ -476,6 +487,12 @@ void VulkanRenderer::renderWorld(const World& world, int cameraX, int cameraY, f
         
         // Draw the quad
         vkCmdDrawIndexed(m_commandBuffers[m_currentFrame], 6, 1, 0, 0, 0);
+    }
+    
+    // Debug log periodically to show rendering is working
+    static int frameCount = 0;
+    if (frameCount++ % 60 == 0) {  // Log every 60 frames
+        std::cout << "Rendering world with materials (frame " << frameCount << ")" << std::endl;
     }
 }
 
@@ -1930,36 +1947,77 @@ void VulkanRenderer::updateWorldTexture(const World& world, int cameraX, int cam
     // Create pixel buffer for the world texture
     std::vector<uint8_t> pixels(width * height * 4, 0);
     
+    // Count the number of non-empty pixels for debugging
+    int nonEmptyPixels = 0;
+    
     // Fill the pixel buffer with actual world data
     for (uint32_t y = 0; y < height; y++) {
         for (uint32_t x = 0; x < width; x++) {
             uint32_t pixelIndex = (y * width + x) * 4;
             
             // Convert screen coordinates to world coordinates
-            // Take into account the camera position and zoom level
-            int worldX = cameraX + static_cast<int>(x / zoomLevel);
-            int worldY = cameraY + static_cast<int>(y / zoomLevel);
+            // The camera coordinates should be at the center of the screen
+            // Adjust for zoom level and offset from center
+            int screenCenterX = width / 2;
+            int screenCenterY = height / 2;
+            int offsetX = x - screenCenterX;
+            int offsetY = y - screenCenterY;
+            
+            // Calculate world coordinates based on camera position and zoom
+            int worldX = cameraX + static_cast<int>(offsetX / zoomLevel);
+            int worldY = cameraY + static_cast<int>(offsetY / zoomLevel);
             
             // Get the particle at this position
             auto particle = world.GetParticle(worldX, worldY);
             
             if (!particle.IsEmpty()) {
-                // Get material color
+                nonEmptyPixels++;
+                
+                // Get material info
                 const auto& material = MaterialDatabase::Get().GetMaterial(particle.materialID);
                 
-                // Set pixel color based on material
-                pixels[pixelIndex + 0] = static_cast<uint8_t>(material.color.r * 255.0f); // R
-                pixels[pixelIndex + 1] = static_cast<uint8_t>(material.color.g * 255.0f); // G
-                pixels[pixelIndex + 2] = static_cast<uint8_t>(material.color.b * 255.0f); // B
-                pixels[pixelIndex + 3] = static_cast<uint8_t>(material.color.a * 255.0f); // A
+                // Use bright, visible colors for debugging
+                std::cout << "Drawing material " << (int)particle.materialID << " at pixel (" << x << "," << y << ")" << std::endl;
+                
+                // Use very visible colors - bright red for all particles for now
+                pixels[pixelIndex + 0] = 255; // R - Bright red regardless of material
+                pixels[pixelIndex + 1] = 0;   // G
+                pixels[pixelIndex + 2] = 0;   // B
+                pixels[pixelIndex + 3] = 255; // A - fully opaque
+                
+                // Print the first few particles for debug
+                static int debugCount = 0;
+                if (debugCount < 5) {
+                    std::cout << "DEBUG: Set pixel at (" << x << "," << y << ") to material " 
+                              << (int)particle.materialID << " (R=" << (int)pixels[pixelIndex+0]
+                              << ", G=" << (int)pixels[pixelIndex+1]
+                              << ", B=" << (int)pixels[pixelIndex+2]
+                              << ", A=" << (int)pixels[pixelIndex+3] << ")" << std::endl;
+                    debugCount++;
+                }
             } else {
-                // Empty space - transparent black
-                pixels[pixelIndex + 0] = 0;    // R
-                pixels[pixelIndex + 1] = 0;    // G
-                pixels[pixelIndex + 2] = 0;    // B
-                pixels[pixelIndex + 3] = 0;    // A (transparent)
+                // Empty space - use a faint grid for visibility
+                if ((x % 64 == 0) || (y % 64 == 0)) {
+                    // Draw faint grid lines
+                    pixels[pixelIndex + 0] = 50;  // R
+                    pixels[pixelIndex + 1] = 50;  // G
+                    pixels[pixelIndex + 2] = 50;  // B
+                    pixels[pixelIndex + 3] = 50;  // A - semi-transparent
+                } else {
+                    // Empty space - transparent black
+                    pixels[pixelIndex + 0] = 0;    // R
+                    pixels[pixelIndex + 1] = 0;    // G
+                    pixels[pixelIndex + 2] = 0;    // B
+                    pixels[pixelIndex + 3] = 0;    // A (transparent)
+                }
             }
         }
+    }
+    
+    // Debug - log if we found any particles
+    static int frameCount = 0;
+    if (frameCount++ % 60 == 0 || nonEmptyPixels > 0) {
+        std::cout << "World texture update: found " << nonEmptyPixels << " non-empty pixels" << std::endl;
     }
     
     // Create staging buffer
