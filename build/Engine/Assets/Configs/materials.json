@@ -1,0 +1,166 @@
+{
+    "materials": [
+        {
+            "id": 0,
+            "name": "Empty",
+            "density": 0.0,
+            "viscosity": 0.0,
+            "flammability": 0.0,
+            "isLiquid": false,
+            "isGas": false,
+            "isSolid": false,
+            "spreadFactor": 0.0,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 0.0,
+                "g": 0.0,
+                "b": 0.0,
+                "a": 0.0
+            }
+        },
+        {
+            "id": 1,
+            "name": "Sand",
+            "density": 1.5,
+            "viscosity": 0.0,
+            "flammability": 0.0,
+            "isLiquid": false,
+            "isGas": false,
+            "isSolid": true,
+            "spreadFactor": 1.0,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 0.76,
+                "g": 0.7,
+                "b": 0.5,
+                "a": 1.0
+            }
+        },
+        {
+            "id": 2,
+            "name": "Water",
+            "density": 1.0,
+            "viscosity": 0.7,
+            "flammability": 0.0,
+            "isLiquid": true,
+            "isGas": false,
+            "isSolid": false,
+            "spreadFactor": 4.0,
+            "corrosiveness": 0.1,
+            "color": {
+                "r": 0.0,
+                "g": 0.3,
+                "b": 0.8,
+                "a": 0.8
+            }
+        },
+        {
+            "id": 3,
+            "name": "Stone",
+            "density": 2.5,
+            "viscosity": 0.0,
+            "flammability": 0.0,
+            "isLiquid": false,
+            "isGas": false,
+            "isSolid": true,
+            "spreadFactor": 0.0,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 0.5,
+                "g": 0.5,
+                "b": 0.5,
+                "a": 1.0
+            }
+        },
+        {
+            "id": 4,
+            "name": "Fire",
+            "density": 0.2,
+            "viscosity": 0.0,
+            "flammability": 1.0,
+            "isLiquid": false,
+            "isGas": false,
+            "isSolid": false,
+            "spreadFactor": 1.5,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 1.0,
+                "g": 0.3,
+                "b": 0.0,
+                "a": 0.9
+            }
+        },
+        {
+            "id": 5,
+            "name": "Wood",
+            "density": 0.8,
+            "viscosity": 0.0,
+            "flammability": 0.7,
+            "isLiquid": false,
+            "isGas": false,
+            "isSolid": true,
+            "spreadFactor": 0.0,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 0.6,
+                "g": 0.4,
+                "b": 0.2,
+                "a": 1.0
+            }
+        },
+        {
+            "id": 6,
+            "name": "Gas",
+            "density": 0.1,
+            "viscosity": 0.1,
+            "flammability": 0.8,
+            "isLiquid": false,
+            "isGas": true,
+            "isSolid": false,
+            "spreadFactor": 3.0,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 0.8,
+                "g": 0.8,
+                "b": 0.9,
+                "a": 0.5
+            }
+        },
+        {
+            "id": 7,
+            "name": "Acid",
+            "density": 1.2,
+            "viscosity": 0.5,
+            "flammability": 0.0,
+            "isLiquid": true,
+            "isGas": false,
+            "isSolid": false,
+            "spreadFactor": 2.0,
+            "corrosiveness": 0.9,
+            "color": {
+                "r": 0.5,
+                "g": 0.9,
+                "b": 0.2,
+                "a": 0.8
+            }
+        },
+        {
+            "id": 8,
+            "name": "Oil",
+            "density": 0.8,
+            "viscosity": 0.8,
+            "flammability": 0.9,
+            "isLiquid": true,
+            "isGas": false,
+            "isSolid": false,
+            "spreadFactor": 2.5,
+            "corrosiveness": 0.0,
+            "color": {
+                "r": 0.1,
+                "g": 0.1,
+                "b": 0.1,
+                "a": 0.9
+            }
+        }
+    ]
+}
