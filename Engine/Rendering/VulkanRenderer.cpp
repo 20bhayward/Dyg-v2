@@ -42,7 +42,7 @@ VulkanRenderer::VulkanRenderer(int screenWidth, int screenHeight, const std::str
     : m_screenWidth(screenWidth)
     , m_screenHeight(screenHeight)
     , m_appName(appName)
-    , m_clearColor{0.2f, 0.0f, 0.3f, 1.0f} // Purple background for visibility
+    , m_clearColor{0.1f, 0.2f, 0.4f, 1.0f} // Purple background for visibility
     , m_currentFrame(0)
     , m_currentImageIndex(0)
     , m_framebufferResized(false) {

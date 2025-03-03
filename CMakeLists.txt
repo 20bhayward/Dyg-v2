@@ -11,8 +11,9 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(USE_VULKAN "Use Vulkan rendering backend" ON)
 
 # Find packages
-find_package(glm REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json REQUIRED)
+
 
 # Find SDL2
 find_package(SDL2 REQUIRED)
@@ -45,6 +46,7 @@ file(GLOB_RECURSE HEADERS
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
