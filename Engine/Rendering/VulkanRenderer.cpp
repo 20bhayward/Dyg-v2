@@ -1976,9 +1976,6 @@ void VulkanRenderer::updateWorldTexture(const World& world, int cameraX, int cam
                 // Get material info
                 const auto& material = MaterialDatabase::Get().GetMaterial(particle.materialID);
                 
-                // Use bright, visible colors for debugging
-                std::cout << "Drawing material " << (int)particle.materialID << " at pixel (" << x << "," << y << ")" << std::endl;
-                
                 // Use very visible colors - bright red for all particles for now
                 pixels[pixelIndex + 0] = 255; // R - Bright red regardless of material
                 pixels[pixelIndex + 1] = 0;   // G
